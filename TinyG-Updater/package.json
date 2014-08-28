@@ -1,0 +1,8 @@
+{
+  "name": "tinyg-updater",
+  "version": "0.0.1",
+  "main": "main.js",
+  "dependencies": {
+    "serial-port": "git+https://github.com/voodootikigod/node-serialport.git"
+  }
+}
