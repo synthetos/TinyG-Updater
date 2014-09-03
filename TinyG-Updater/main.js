@@ -15,25 +15,35 @@ require('crash-reporter').start();
 // be closed automatically when the javascript object is GCed.
 var mainWindow = null;
 
-console.log("Path: " + process.execPath);
-console.log("CWD: " + process.cwd());
+// console.log("Path: " + process.execPath);
+// console.log("CWD: " + process.cwd());
+console.log("Node version: " + process.version);
 
 if (process.platform == 'darwin') {
   if (/Contents\/MacOS/.test(process.execPath)) {
     // Running as an app
-    avrdude_path = path.resolve(process.execPath, "../../Resources/app/osx-bin/avrdude");
+    avrdude_path = path.resolve(process.execPath, "../../Resources/app/bin/avrdude");
   }
   else {
     // Running from the command line
     avrdude_path = path.resolve(process.cwd(), "./osx-bin/avrdude");
   }
-
+} else if (process.platform == 'win32') {
+  // On windows, we see if we were passed an app name
+  if (process.argv.length == 1) {
+    // Running as an app
+    avrdude_path = path.resolve(process.execPath, "../bin/avrdude.exe");
+  }
+  else {
+    // Running from the command line
+    avrdude_path = path.resolve(process.cwd(), process.argv[1], "../win-bin/avrdude.exe");
+  }
 }
 
 
 // Quit when all windows are closed.
 app.on('window-all-closed', function() {
-  if (process.platform != 'darwin')
+  // if (process.platform != 'darwin')
     app.quit();
 });
 
@@ -48,6 +58,7 @@ app.on('ready', function() {
 
   mainWindow.webContents.on('did-finish-load', function() {
     listSerialPorts();
+    mainWindow.webContents.send('process', avrdude_path);
   });
 
   // Emitted when the window is closed.
@@ -60,11 +71,6 @@ app.on('ready', function() {
 });
 
 app.on('will-finish-launching', function() {
-  var protocol = require('protocol');
-  protocol.registerProtocol('tinyg', function(request) {
-    console.log("intercepted: "+request.url);
-    return null;
-  });
 });
 
 ipc.on('load-hex', function(event, data) {
@@ -223,12 +229,15 @@ function readVersion(portPath) {
     }
     mainWindow.webContents.send('versionCheckResponse', {port:portPath, failed:true});
   }, 500);
+
   port.on('open', function () {
-    port.write('{"fb":null}\n', function (err) {
-      if (err) {
-        console.log(err);
-        port.close();
-      }
+    port.flush(function() {
+      port.write('{"fb":null}\n', function (err) {
+        if (err) {
+          console.log(err);
+          port.close();
+        }
+      });
     });
 
     port.on('data', function (data) {
@@ -319,6 +328,7 @@ function resetTinyG(portPath, hexName) {
 var _listSerialPortsTimeout = null;
 function listSerialPorts() {
   clearTimeout(_listSerialPortsTimeout);
+  console.log("Requested listing...");
   serialport.list(function (err, results) {
     if (err) {
       throw err;
@@ -328,17 +338,21 @@ function listSerialPorts() {
 
     for (var i = 0; i < results.length; i++) {
       var port = results[i];
-      // console.log(port);
-      if ((port.vendorId == 0x0403 && port.productId == 0x6015) || (port.pnpId == 'usb-0403_6015-if00')) {
+      console.log(port);
+      if ( /* OS X style:  */ (port.vendorId == 0x0403 && port.productId == 0x6015) ||
+           /* Linux style: */ (port.pnpId == 'usb-0403_6015-if00') ||
+           /* Win32 style: */ (/VID_0403\+PID_6015/.test(port.pnpId))
+         ) {
         // TinyG attached
         tinygs.push(port);
-      } else if ((port.vendorId == 0x03eb && port.productId == 0x6124) || (port.pnpId == 'usb-03eb_6124-if00')) {
-        // TinyG v9 (SAM-BA Loader) attached
-        console.log("Found G2v9 in Boot mode!\n")
-      } else if (port.vendorId == 0x03eb && port.productId == 0x2141 || (port.pnpId == 'usb-03eb_6124-if00')) {
-        // TinyG v9 (SAM-BA Loader) attached
-        console.log("Found SAM-ICE!\n")
       }
+      // } else if ((port.vendorId == 0x03eb && port.productId == 0x6124) || (port.pnpId == 'usb-03eb_6124-if00')) {
+      //   // TinyG v9 (SAM-BA Loader) attached
+      //   console.log("Found G2v9 in Boot mode!\n")
+      // } else if (port.vendorId == 0x03eb && port.productId == 0x2141 || (port.pnpId == 'usb-03eb_6124-if00')) {
+      //   // TinyG v9 (SAM-BA Loader) attached
+      //   console.log("Found SAM-ICE!\n")
+      // }
     }
 
 

@@ -64,6 +64,10 @@ binaryApp.controller('BinaryCtrl', function ($scope, $http, $modal) {
     }
   });
 
+  ipc.on('process', function (data) {
+    $scope.process = data;
+  })
+
   $scope.checkVersion = function(port) {
     ipc.send('check-version', {port:port.comName});
     port.checking = true;

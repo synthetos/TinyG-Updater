@@ -56,8 +56,9 @@
       </p>
 
       <table class="table table-striped" ng-if="ports.length>0">
-        <tr ng-repeat="port in ports">
-          <td class="text-left" ng-click="$parent.selectedPort = port.comName"><input type="radio" ng-model="$parent.selectedPort" ng-value="port.comName"> <code>{{port.comName}}</code></td>
+        <tr ng-repeat="port in ports" ng-click="$parent.selectedPort = port.comName">
+          <td class="text-left"><input type="radio" ng-model="$parent.selectedPort" ng-value="port.comName"> <code>{{port.comName}}</code></td>
+          <td class="text-left"><input type="radio" ng-model="$parent.selectedPort" ng-value="port.comName"> <code>{{port|json}}</code></td>
           <td>
             <button class="fa fa-search" ng-show="!port.version &amp;&amp; !port.checking" ng-click="checkVersion(port)"> Lookup...</button>
             <div ng-show="port.version != null">{{port.version}} <button class="fa fa-refresh" ng-show="port.version &amp;&amp; !port.checking" ng-click="checkVersion(port)"></button></div>
@@ -83,13 +84,11 @@
         <label class="checkbox"><input type="checkbox" ng-model="autoReset"> Attempt automatic reset</label>
         <button type="button" class="btn btn-primary" ng-model="programmable" ng-disabled="!selectedHex || !selectedHex.downloaded || !$parent.selectedPort || ports==null || ports.length==0" ng-click="go()">Go!</button>
       </p>
-      <p ng-show="programming"></p>
-
+      <p>Process: {{process|json}}</p>
       <!-- <h2>About</h2>
       <p>Please visit the <a href="https://github.com/synthetos/tinyg/wiki">TinyG Wiki</a> for more complete info.</p>
       <p>Please visit the <a href="https://github.com/synthetos/tgfx/wiki">tgFX Wiki</a> for more complete info.</p>
       <p>Please visit the <a href="https://github.com/synthetos/G2/wiki">G2 Wiki</a> for more complete info.</p> -->
-
     </section>
 
 

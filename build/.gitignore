@@ -1,3 +1,4 @@
 atom-shell
 *.app
 *.zip
+!node_modules
