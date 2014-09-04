@@ -132,6 +132,7 @@ var ProgramInstanceCtrl = function ($scope, $modalInstance, data) {
 
   $scope.programming = data.programming;
   $scope.progress = data.progress;
+  $scope.log = "";
 
   $scope.ok = function () {
     $modalInstance.close('ok');
@@ -143,15 +144,16 @@ var ProgramInstanceCtrl = function ($scope, $modalInstance, data) {
 
 
   ipc.on('status', function(progress) {
-    var old_text = $scope.progress.text;
-    $scope.progress = progress;
-    $scope.progress.text = progress.text || old_text;
+    $scope.progress.text = progress.text || $scope.progress.text;
     $scope.progress.error = progress.error || $scope.progress.error ;
+    $scope.progress.percent = progress.percent || $scope.progress.percent ;
     if ($scope.progress.percent == 1) {
       $scope.progress.type = $scope.progress.error ? "danger" : "success";
       $scope.programming = false;
     } else {
       $scope.progress.type = "info";
     };
+    if (progress.log)
+      $scope.log += progress.log;
   });
 };

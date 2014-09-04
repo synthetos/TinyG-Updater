@@ -20,19 +20,20 @@ var mainWindow = null;
 console.log("Node version: " + process.version);
 
 if (process.platform == 'darwin') {
-  if (/Contents\/MacOS/.test(process.execPath)) {
+  if (process.argv.length == 1) {
     // Running as an app
-    avrdude_path = path.resolve(process.execPath, "../../Resources/app/bin/avrdude");
+    avrdude_path = path.resolve(path.dirname(process.execPath), "../Resources/app/bin/avrdude");
   }
   else {
     // Running from the command line
-    avrdude_path = path.resolve(process.cwd(), "./osx-bin/avrdude");
+    avrdude_path = path.resolve(process.cwd(), "./darwin-bin/avrdude");
   }
+  console.log("avrdude_path:" +avrdude_path)
 } else if (process.platform == 'win32') {
   // On windows, we see if we were passed an app name
   if (process.argv.length == 1) {
     // Running as an app
-    avrdude_path = path.resolve(process.execPath, "../bin/avrdude.exe");
+    avrdude_path = path.resolve(path.dirname(process.execPath), "resources/app/bin/avrdude.exe");
   }
   else {
     // Running from the command line
@@ -81,8 +82,9 @@ ipc.on('load-hex', function(event, data) {
   var data_path = app.getDataPath();
   if (!fs.existsSync(data_path))
     fs.mkdirSync(data_path);
+  process.chdir(data_path);
 
-  var full_hex_path = path.resolve(data_path, hexName);
+  var full_hex_path = hexName; //path.resolve(data_path, hexName);
 
   if (fs.existsSync(full_hex_path)) {
     getChecksum(full_hex_path, function (new_hash) {
@@ -158,52 +160,75 @@ function runAvrdude(portPath, hexName) {
   var hashCount = 0;
 
   var data_path = app.getDataPath();
-  var full_hex_path = path.resolve(data_path, hexName);
-
-  console.log(portPath);
+  process.chdir(data_path);
+  var full_hex_path = hexName;//path.resolve(data_path, hexName);
 
   mainWindow.webContents.send('status', {"text": "Connecting...", percent:0});
 
-  avrdude = spawn(avrdude_path, ['-C', avrdude_path+'.conf', '-p', 'x192a3', '-c', 'avr109', '-b', '115200', '-P', portPath, '-U', 'flash:w:'+full_hex_path]);
+  var data_cache = "";
+
+  if (process.platform == 'win32')
+    // cut off the ".exe"
+    avrdudeconf_path = avrdude_path.slice(0, -4)+'.conf'
+  else
+    avrdudeconf_path = avrdude_path+'.conf'
+
+  avrdude = spawn(avrdude_path, ['-C', avrdudeconf_path, '-p', 'x192a3', '-c', 'avr109', '-b', '115200', '-P', portPath, '-U', 'flash:w:'+full_hex_path]);
 
   avrdude.stdout.on('data', function (data) {
+    mainWindow.webContents.send('status', {"log": data.toString()});
     console.log('stdout: ' + data);
   });
 
   avrdude.stderr.on('data', function (data) {
     console.log('stderr: ' + data);
+    mainWindow.webContents.send('status', {"log": data.toString()});
 
-    if (/AVR device initialized and ready to accept instructions/.test(data)) {
-      status="connected";
-      mainWindow.webContents.send('status', {"text": "Connected...", percent:0});
-    }
-    else if (/^Writing \|/m.test(data)) {
-      if (status=="connected") {
-        status="writing";
-        hashCount=0;
-        mainWindow.webContents.send('status', {"text": "Writing...", percent:0});
+    data_cache += data.toString();
+    pre_data_cache = "";
+
+    while (data_cache != pre_data_cache) {
+      pre_data_cache = data_cache;
+      console.log("dc>> " + data_cache);
+
+      if (r = /AVR device initialized and ready to accept instructions([^•]*)/.exec(data_cache)) {
+        status="connected";
+        mainWindow.webContents.send('status', {"text": "Connected...", percent:0});
+        data_cache = r[1];
       }
-    }
-    else if (/^Reading \|/m.test(data)) {
-      if (status=="writing") {
-        status="verifying";
-        hashCount=50;
-        mainWindow.webContents.send('status', {"text": "Verifying...", percent:0});
+      else if (r = /^Writing \| ([^•]*)/m.exec(data_cache)) {
+        if (status=="connected") {
+          status="writing";
+          hashCount=0;
+          mainWindow.webContents.send('status', {"text": "Writing...", percent:0});
+        }
+        data_cache = r[1];
       }
-    }
-    else if (/^#$/.test(data)) {
-      if (status=="verifying" || status=="writing") {
-        hashCount++;
-        mainWindow.webContents.send('status', {percent:hashCount/100});
+      else if (r = /^Reading \| ([^•]*)/m.exec(data_cache)) {
+        if (status=="writing") {
+          status="verifying";
+          hashCount=50;
+          mainWindow.webContents.send('status', {"text": "Verifying...", percent:0.5});
+        }
+        data_cache = r[1];
       }
-    }
-    else if (/^avrdude: (verification error|error:)/m.test(data)) {
-      status="error";
-      mainWindow.webContents.send('status', {"text": "Verify failed!", percent:1, error:true});
-    }
-    else if (/^avrdude: ([0-9]+) bytes of flash verified/m.test(data)) {
-      status="verified";
-      mainWindow.webContents.send('status', {"text": "Verified!", percent:1});
+      else if (r = /^(#+)([^•]*)/.exec(data_cache)) {
+        if (status=="verifying" || status=="writing") {
+          hashCount += r[1].length;
+          mainWindow.webContents.send('status', {percent:hashCount/100});
+        }
+        data_cache = r[2];
+      }
+      else if (r = /avrdude(?:\.exe): (verification error|error:)([^•]*)/m.exec(data_cache)) {
+        status="error";
+        mainWindow.webContents.send('status', {"text": "Verify failed!", percent:1, error:true});
+        data_cache = r[2];
+      }
+      else if (r = /avrdude(?:\.exe): ([0-9]+) bytes of flash verified([^•]*)/m.exec(data_cache)) {
+        status="verified";
+        mainWindow.webContents.send('status', {"text": "Verified!", percent:1});
+        data_cache = r[2];
+      }
     }
   });
 
@@ -328,7 +353,7 @@ function resetTinyG(portPath, hexName) {
 var _listSerialPortsTimeout = null;
 function listSerialPorts() {
   clearTimeout(_listSerialPortsTimeout);
-  console.log("Requested listing...");
+  // console.log("Requested listing...");
   serialport.list(function (err, results) {
     if (err) {
       throw err;
@@ -338,7 +363,7 @@ function listSerialPorts() {
 
     for (var i = 0; i < results.length; i++) {
       var port = results[i];
-      console.log(port);
+      // console.log(port);
       if ( /* OS X style:  */ (port.vendorId == 0x0403 && port.productId == 0x6015) ||
            /* Linux style: */ (port.pnpId == 'usb-0403_6015-if00') ||
            /* Win32 style: */ (/VID_0403\+PID_6015/.test(port.pnpId))
