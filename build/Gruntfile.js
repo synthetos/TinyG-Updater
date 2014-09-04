@@ -67,6 +67,6 @@ module.exports = function(grunt) {
     })
   });
 
-  grunt.registerTask('default', 'Build TinyG-Uploader for all suppported platforms.', ['build-atom-shell-app', 'postprocess'] );
+  grunt.registerTask('default', ['build-atom-shell-app', 'postprocess'] );
 
 };
