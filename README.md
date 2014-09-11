@@ -18,6 +18,8 @@ rm -rf node_modules
 
 # Windows with MSVC 2013 and cygwin (and python intalled outside of cygwin):
 npm install --dd --target='0.11.13' --msvs_version=2013 --disturl='https://gh-contractor-zcbenz.s3.amazonaws.com/atom-shell/dist' --arch=ia32 --target_arch=ia32
+## IMPORTANT, or the zip file will have paths that are too long:
+npm dedupe
 zip -r ../node_modules-node-v14-win32-ia32.zip node_modules
 rm -rf node_modules
 ```

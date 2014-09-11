@@ -3,6 +3,9 @@
   "version": "0.0.1",
   "main": "main.js",
   "dependencies": {
-    "serial-port": "git+https://github.com/giseburt/node-serialport.git"
+    "serial-port": "git+https://github.com/giseburt/node-serialport.git",
+    "tar-pack": "~2.0.0",
+    "node-pre-gyp": "0.5.x",
+    "form-data": "~0.1.0"
   }
 }

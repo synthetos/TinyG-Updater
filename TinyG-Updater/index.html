@@ -71,16 +71,17 @@
     <p class="alert alert-warning" role="alert" ng-if="ports.length&gt;0 &amp;&amp; !$parent.selectedPort">
       Please choose a TinyG. <i class="fa fa-spinner fa-spin"></i>
     </p>
-<div class="clearfix">
-    <p class="pull-right text-right">
-      <label class="checkbox"><input type="checkbox" ng-model="autoReset"> Attempt automatic reset</label>
-      <button type="button" class="btn btn-primary" ng-model="programmable" ng-disabled="!selectedHex || !selectedHex.downloaded || !$parent.selectedPort || ports==null || ports.length==0" ng-click="go()">Go!</button>
-    </p>
-</div>
+    <div class="clearfix">
+      <p class="pull-right text-right">
+        <label class="checkbox"><input type="checkbox" ng-model="autoReset"> Attempt automatic reset</label>
+        <button type="button" class="btn btn-primary" ng-model="programmable" ng-disabled="!selectedHex || !selectedHex.downloaded || !$parent.selectedPort || ports==null || ports.length==0" ng-click="go()">Go!</button>
+      </p>
+    </div>
     <!-- <h2>About</h2>
     <p>Please visit the <a href="https://github.com/synthetos/tinyg/wiki">TinyG Wiki</a> for more complete info.</p>
     <p>Please visit the <a href="https://github.com/synthetos/tgfx/wiki">tgFX Wiki</a> for more complete info.</p>
     <p>Please visit the <a href="https://github.com/synthetos/G2/wiki">G2 Wiki</a> for more complete info.</p> -->
+    <p id="version">v0.5 {{process|json}}</p>
   </div>
 
   <script src="javascripts/angular.min.js"></script>

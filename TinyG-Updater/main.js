@@ -33,7 +33,7 @@ if (process.platform == 'darwin') {
   // On windows, we see if we were passed an app name
   if (process.argv.length == 1) {
     // Running as an app
-    avrdude_path = path.resolve(path.dirname(process.execPath), "resources/app/bin/avrdude.exe");
+    avrdude_path = path.resolve(path.dirname(process.execPath), "./resources/app/bin/avrdude.exe");
   }
   else {
     // Running from the command line
