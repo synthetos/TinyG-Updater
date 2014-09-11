@@ -185,6 +185,10 @@ function runAvrdude(portPath, hexName) {
     mainWindow.webContents.send('status', {"log": data.toString()});
 
     data_cache += data.toString();
+    parse_data_cache();
+  });
+
+  function parse_data_cache() {
     pre_data_cache = "";
 
     while (data_cache != pre_data_cache) {
@@ -224,19 +228,26 @@ function runAvrdude(portPath, hexName) {
         mainWindow.webContents.send('status', {"text": "Verify failed!", percent:1, error:true});
         data_cache = r[2];
       }
-      else if (r = /avrdude(?:\.exe): ([0-9]+) bytes of flash verified([^•]*)/m.exec(data_cache)) {
+      else if (r = /bytes of flash verified([^•]*)/m.exec(data_cache)) {
         status="verified";
         mainWindow.webContents.send('status', {"text": "Verified!", percent:1});
         data_cache = r[2];
       }
     }
-  });
+  }
 
   avrdude.on('close', function (code) {
     console.log('child process exited with code ' + code);
-    if (status!="verified") {
+    // Pause to check if all the data has been parsed...
+    if (code != 0 && status != "verified") {
       mainWindow.webContents.send('status', {"text": "Verify failed!", percent:1, error:true});
+    } else {
+      parse_data_cache();
+      if (status!="verified") {
+        mainWindow.webContents.send('status', {"text": "Succedded! (verify dubious)", percent:1});
+      }
     }
+
   });
 };
 
@@ -253,28 +264,29 @@ function readVersion(portPath) {
       console.log("Timeout, closing port: " + e);
     }
     mainWindow.webContents.send('versionCheckResponse', {port:portPath, failed:true});
-  }, 500);
+  }, 1000);
 
   port.on('open', function () {
-    port.flush(function() {
-      port.write('{"fb":null}\n', function (err) {
-        if (err) {
-          console.log(err);
+    port.write('{"fb":null}\n', function (err) {
+      if (err) {
+        console.log(err);
+        try {
           port.close();
-        }
-      });
+        } catch (e) { /* ignore it */ }
+      }
     });
 
     port.on('data', function (data) {
       console.log("tg> " + data);
       var err = false;
       try{
-        if (/^{.+}$/m.test(data)) {
-          var resp = JSON.parse(data);
+        if (r = /({.+})$/m.exec(data)) {
+          var resp = JSON.parse(r[1]);
           if (resp.r.fb) {
             console.log("fb: " + resp.r.fb.toString());
             mainWindow.webContents.send('versionCheckResponse', {port:portPath, failed:false, version:resp.r.fb});
             port.close();
+            clearTimeout(portCloseTimeout);
           } else {
             console.log("resp: " + resp.toString());
           }
@@ -283,8 +295,8 @@ function readVersion(portPath) {
         }
       } catch(e) {
         console.log("tg err> " + e.toString() + " parsing data: " + data.toString());
-        err = true;
-        port.close();
+        // err = true;
+        // port.close();
       }
       if (err) {
         mainWindow.webContents.send('versionCheckResponse', {port:portPath, failed:true});
@@ -293,6 +305,13 @@ function readVersion(portPath) {
 
     port.on('error', function (err) {
       console.log("err> " + err);
+
+      // The error may be that it couldn't open, so we catch any failures to close here.
+      // But, we have to try, because leaving it open causes a lot of other issues.
+      try {
+        port.close();
+      } catch (e) { /* ignore it */ }
+
     });
 
     port.on('close', function (err) {
@@ -368,9 +387,16 @@ function listSerialPorts() {
            /* Linux style: */ (port.pnpId == 'usb-0403_6015-if00') ||
            /* Win32 style: */ (/VID_0403\+PID_6015/.test(port.pnpId))
          ) {
-        // TinyG attached
+        // TinyG v8 attached
+        tinygs.push(port);
+      } else if ( /* OS X style:  */ (port.vendorId == 0x0403 && port.productId == 0x6001) ||
+           /* Linux style: */ (port.pnpId == 'usb-0403_6001-if00') ||
+           /* Win32 style: */ (/VID_0403\+PID_6001/.test(port.pnpId))
+         ) {
+        // TinyG v7 attached
         tinygs.push(port);
       }
+
       // } else if ((port.vendorId == 0x03eb && port.productId == 0x6124) || (port.pnpId == 'usb-03eb_6124-if00')) {
       //   // TinyG v9 (SAM-BA Loader) attached
       //   console.log("Found G2v9 in Boot mode!\n")

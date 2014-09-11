@@ -4,112 +4,104 @@
   <meta charset='utf-8'>
   <meta http-equiv="X-UA-Compatible" content="chrome=1">
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+  <!--<script src="javascripts/jquery-2.1.1.min.js"></script>-->
   <link rel="stylesheet" href="stylesheets/font-awesome-4.2.0/css/font-awesome.min.css">
   <link rel="stylesheet" href="stylesheets/bootstrap-3.2.0-dist/css/bootstrap.min.css">
   <link rel="stylesheet" href="stylesheets/bootstrap-3.2.0-dist/css/bootstrap-theme.min.css">
   <link rel="stylesheet" type="text/css" href="stylesheets/stylesheet.css" media="screen" />
-  <link rel="stylesheet" type="text/css" href="stylesheets/pygment_trac.css" media="screen" />
-  <link rel="stylesheet" type="text/css" href="stylesheets/print.css" media="print" />
+  <!-- <link rel="stylesheet" type="text/css" href="stylesheets/pygment_trac.css" media="screen" /> -->
+  <!-- <link rel="stylesheet" type="text/css" href="stylesheets/print.css" media="print" /> -->
 
-  <!--[if lt IE 9]>
-  <script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script>
-  <![endif]-->
+    <!-- HTML5 Shim and Respond.js IE8 support of HTML5 elements and media queries -->
+    <!-- WARNING: Respond.js doesn't work if you view the page via file:// -->
+    <!--[if lt IE 9]>
+      <script src="https://oss.maxcdn.com/html5shiv/3.7.2/html5shiv.min.js"></script>
+      <script src="https://oss.maxcdn.com/respond/1.4.2/respond.min.js"></script>
+    <![endif]-->
 
-  <title>Synthetos TinyG Updater</title>
+  <title>Synthetos TinyG-Updater</title>
 </head>
 
 <body ng-app="binaryApp">
-  <!-- <header>
-  <div class="inner">
-  <h1>Synthetos Downloads</h1>
-  <h2>Affordable Industrial Grade Motion Control</h2>
-  <a href="https://github.com/synthetos/tinyg" class="button"><small>View TinyG project on</small>GitHub</a>
+  <div id="main-content" class="container" ng-controller="BinaryCtrl">
+    <h1>Synthetos TinyG Updater</h1>
+
+    <h2>1) Choose a binary</h2>
+    <table class="table table-striped">
+      <tr>
+        <th>Branch</th>
+        <th>Version</th>
+      </tr>
+      <tr ng-repeat="binary in binaries">
+        <td class="text-left" ng-click="$parent.binaryClicked(binary)"><input type="radio" ng-model="$parent.selectedHex" ng-value="binary"> <i class="fa fa-file-archive-o"></i>{{binary.branch}}</td>
+        <td class="text-left">{{binary.version}} <i class="fa fa-refresh fa-spin" ng-show="binary.loading"></i><i class="fa fa-frown-o" ng-show="binary.checksumError"></i><i class="fa fa-cloud-download" ng-show="binary.downloaded"></i></td>
+        <!-- <td><a ng-click="loadHex(''+binary.name+'.hex', binary.sum)">{{binary.name}}.hex</a></td> -->
+      </tr>
+      <tr ng-if="binaries.length==0">
+        <td colspan="2">Loading list of binaries...</td>
+      </tr>
+    </table>
+
+    <h2>2) Choose a TinyG</h2>
+
+    <p class="alert alert-warning" role="alert" ng-if="ports.length==0">
+      <td colspan="2">Waiting for a TinyG to be connected...</td>
+    </p>
+
+    <table class="table table-striped" ng-if="ports.length>0">
+      <tr ng-repeat="port in ports" ng-click="$parent.selectedPort = port.comName">
+        <td class="text-left"><input type="radio" ng-model="$parent.selectedPort" ng-value="port.comName"> <code>{{port.comName}}</code></td>
+        <td>
+          <button class="fa fa-search" ng-show="!port.version &amp;&amp; !port.checking" ng-click="checkVersion(port)"> Lookup...</button>
+          <div ng-show="port.version != null">{{port.version}} <button class="fa fa-refresh" ng-show="port.version &amp;&amp; !port.checking" ng-click="checkVersion(port)"></button><i class="fa fa-refresh fa-spin" ng-show="port.checking"></i><i class="fa fa-frown-o" ng-show="port.failedCheck"></i></div>
+        </td>
+      </tr>
+    </table>
+
+    <h2>3) Program it!</h2>
+    <p ng-if="selectedHex &amp;&amp; selectedPort &amp;&amp; ports.length&gt;0">
+      Program <code>{{selectedHex.name+'.hex'}}</code> to <code>{{selectedPort}}</code>
+    </p>
+    <p class="alert alert-warning" role="alert" ng-if="!selectedHex">
+      Please select a binary. <i class="fa fa-spinner fa-spin"></i>
+    </p>
+    <p class="alert alert-warning" role="alert" ng-if="ports==null || ports.length==0">
+      Please connect a TinyG. <i class="fa fa-spinner fa-spin"></i>
+    </p>
+    <p class="alert alert-warning" role="alert" ng-if="ports.length&gt;0 &amp;&amp; !$parent.selectedPort">
+      Please choose a TinyG. <i class="fa fa-spinner fa-spin"></i>
+    </p>
+<div class="clearfix">
+    <p class="pull-right text-right">
+      <label class="checkbox"><input type="checkbox" ng-model="autoReset"> Attempt automatic reset</label>
+      <button type="button" class="btn btn-primary" ng-model="programmable" ng-disabled="!selectedHex || !selectedHex.downloaded || !$parent.selectedPort || ports==null || ports.length==0" ng-click="go()">Go!</button>
+    </p>
 </div>
-</header> -->
-
-<div id="content-wrapper" ng-controller="BinaryCtrl">
-  <div class="inner clearfix">
-    <section id="main-content">
-
-      <h1>Synthetos TinyG Updater</h1>
-
-      <h2>1) Choose a binary</h2>
-      <table class="table table-striped">
-        <tr>
-          <th>Branch</th>
-          <th>Version</th>
-        </tr>
-        <tr ng-repeat="binary in binaries">
-          <td class="text-left" ng-click="$parent.binaryClicked(binary)"><input type="radio" ng-model="$parent.selectedHex" ng-value="binary"> <i class="fa fa-file-archive-o"></i>{{binary.branch}}</td>
-          <td class="text-left">{{binary.version}} <i class="fa fa-refresh fa-spin" ng-show="binary.loading"></i><i class="fa fa-frown-o" ng-show="binary.checksumError"></i><i class="fa fa-cloud-download" ng-show="binary.downloaded"></i></td>
-          <!-- <td><a ng-click="loadHex(''+binary.name+'.hex', binary.sum)">{{binary.name}}.hex</a></td> -->
-        </tr>
-        <tr ng-if="binaries.length==0">
-          <td colspan="2">Loading list of binaries...</td>
-        </tr>
-      </table>
-
-      <h2>2) Choose a TinyG</h2>
-
-      <p class="alert alert-warning" role="alert" ng-if="ports.length==0">
-        <td colspan="2">Waiting for a TinyG to be connected...</td>
-      </p>
-
-      <table class="table table-striped" ng-if="ports.length>0">
-        <tr ng-repeat="port in ports" ng-click="$parent.selectedPort = port.comName">
-          <td class="text-left"><input type="radio" ng-model="$parent.selectedPort" ng-value="port.comName"> <code>{{port.comName}}</code></td>
-          <td>
-            <button class="fa fa-search" ng-show="!port.version &amp;&amp; !port.checking" ng-click="checkVersion(port)"> Lookup...</button>
-            <div ng-show="port.version != null">{{port.version}} <button class="fa fa-refresh" ng-show="port.version &amp;&amp; !port.checking" ng-click="checkVersion(port)"></button></div>
-            <i class="fa fa-refresh fa-spin" ng-show="port.checking"></i><i class="fa fa-frown-o" ng-show="port.failedCheck"></i>
-          </td>
-        </tr>
-      </table>
-
-      <h2>3) Program it!</h2>
-      <p ng-if="selectedHex &amp;&amp; selectedPort &amp;&amp; ports.length&gt;0">
-        Program <code>{{selectedHex.name+'.hex'}}</code> to <code>{{selectedPort}}</code>
-      </p>
-      <p class="alert alert-warning" role="alert" ng-if="!selectedHex">
-        Please select a binary. <i class="fa fa-spinner fa-spin"></i>
-      </p>
-      <p class="alert alert-warning" role="alert" ng-if="ports==null || ports.length==0">
-        Please connect a TinyG. <i class="fa fa-spinner fa-spin"></i>
-      </p>
-      <p class="alert alert-warning" role="alert" ng-if="ports.length&gt;0 &amp;&amp; !$parent.selectedPort">
-        Please choose a TinyG. <i class="fa fa-spinner fa-spin"></i>
-      </p>
-      <p class="pull-right text-right">
-        <label class="checkbox"><input type="checkbox" ng-model="autoReset"> Attempt automatic reset</label>
-        <button type="button" class="btn btn-primary" ng-model="programmable" ng-disabled="!selectedHex || !selectedHex.downloaded || !$parent.selectedPort || ports==null || ports.length==0" ng-click="go()">Go!</button>
-      </p>
-      <!-- <h2>About</h2>
-      <p>Please visit the <a href="https://github.com/synthetos/tinyg/wiki">TinyG Wiki</a> for more complete info.</p>
-      <p>Please visit the <a href="https://github.com/synthetos/tgfx/wiki">tgFX Wiki</a> for more complete info.</p>
-      <p>Please visit the <a href="https://github.com/synthetos/G2/wiki">G2 Wiki</a> for more complete info.</p> -->
-    </section>
-
-
+    <!-- <h2>About</h2>
+    <p>Please visit the <a href="https://github.com/synthetos/tinyg/wiki">TinyG Wiki</a> for more complete info.</p>
+    <p>Please visit the <a href="https://github.com/synthetos/tgfx/wiki">tgFX Wiki</a> for more complete info.</p>
+    <p>Please visit the <a href="https://github.com/synthetos/G2/wiki">G2 Wiki</a> for more complete info.</p> -->
   </div>
-</div>
 
-<script src="javascripts/angular.min.js"></script>
-<script src="javascripts/ui-bootstrap-tpls-0.11.0.min.js"></script>
-<script src="javascripts/app.js"></script>
+  <script src="javascripts/angular.min.js"></script>
+  <script src="javascripts/ui-bootstrap-tpls-0.11.0.min.js"></script>
+  <script src="javascripts/app.js"></script>
 
-    <script type="text/ng-template" id="myModalContent.html">
-        <div class="modal-header">
-            <h3 class="modal-title">Programming Progress</h3>
-        </div>
-        <div class="modal-body">
-          <progressbar class="progress-striped active" max="1" value="progress.percent" type="{{progress.type}}"><i>{{progress.text}}</i></progressbar><br>
-          <pre>{{log}}</pre>
-        </div>
-        <div class="modal-footer">
-            <!-- <button class="btn btn-warning" ng-click="cancel()">Cancel</button> -->
-            <button class="btn btn-primary" ng-disabled="programming" ng-click="ok()">OK</button>
-        </div>
-    </script>
+
+  <script type="text/ng-template" id="programming.html">
+      <div class="modal-header">
+          <h3 class="modal-title">Programming Progress</h3>
+      </div>
+      <div class="modal-body">
+        <progressbar class="progress-striped active" max="1" value="progress.percent" type="{{progress.type}}"><i>{{progress.text}}</i></progressbar>
+        <button class="btn btn-xs btn-default" ng-click="isCollapsed=!isCollapsed">{{isCollapsed?"Show":"Hide"}} Console</button>
+        <pre class="pre-scrollable" collapse="isCollapsed" id="console">{{log}}</pre>
+      </div>
+      <div class="modal-footer">
+          <!-- <button class="btn btn-warning" ng-click="cancel()">Cancel</button> -->
+          <button class="btn btn-primary" ng-disabled="programming" ng-click="ok()">OK</button>
+      </div>
+  </script>
 
 </body>
 </html>

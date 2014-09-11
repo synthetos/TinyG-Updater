@@ -101,7 +101,7 @@ binaryApp.controller('BinaryCtrl', function ($scope, $http, $modal) {
     ipc.send('program-hex', {name:$scope.selectedHex.name+".hex", port:$scope.selectedPort, reset:$scope.autoReset});
 
     var modalInstance = $modal.open({
-      templateUrl: 'myModalContent.html',
+      templateUrl: 'programming.html',
       controller: ProgramInstanceCtrl,
       size: "sm",
       resolve: {
@@ -132,6 +132,7 @@ var ProgramInstanceCtrl = function ($scope, $modalInstance, data) {
 
   $scope.programming = data.programming;
   $scope.progress = data.progress;
+  $scope.isCollapsed = true;
   $scope.log = "";
 
   $scope.ok = function () {
@@ -153,7 +154,13 @@ var ProgramInstanceCtrl = function ($scope, $modalInstance, data) {
     } else {
       $scope.progress.type = "info";
     };
-    if (progress.log)
+    if (progress.log) {
+      // var c = $( '#console' );
+      // consoleFromBottom = c.scollHeight-c.scrollTop;
       $scope.log += progress.log;
+      // if (consoleFromBottom < 10) {
+        // c.scollHeight = c.scrollTop;
+      // }
+    }
   });
 };
