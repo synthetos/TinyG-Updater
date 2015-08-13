@@ -30,6 +30,7 @@ if (electronVersion !== dependenciesCompiledAgainst) {
 // to compile for Electron.
 process.env.npm_config_disturl = "https://atom.io/download/atom-shell";
 process.env.npm_config_target = electronVersion;
+process.env.npm_config_runtime = "electron";
 
 var params = ['install'];
 // Maybe there was name of package user wants to install passed as a parameter.

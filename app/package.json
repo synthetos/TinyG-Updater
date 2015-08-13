@@ -10,6 +10,7 @@
     "target": "development"
   },
   "dependencies": {
-    "fs-jetpack": "^0.6.5"
+    "fs-jetpack": "^0.6.5",
+    "serialport": "git+file:///Users/rob/PersonalProjects/node-serialport"
   }
 }
