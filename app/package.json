@@ -1,16 +1,11 @@
 {
-  "name": "electron-boilerplate",
-  "productName": "Electron Boilerplate",
-  "identifier": "com.example.electron-boilerplate",
-  "description": "Starter for your Electron application. Out of the box ready for serious stuff.",
-  "version": "0.1.0",
-  "author": "Mr Gumby <gumby@sillywalks.com>",
+  "name": "tinyg-updater",
+  "version": "0.0.1",
   "main": "main.js",
-  "config": {
-    "target": "development"
-  },
   "dependencies": {
-    "fs-jetpack": "^0.6.5",
-    "serialport": "git+file:///Users/rob/PersonalProjects/node-serialport"
+    "serialport": "git+file:///Users/rob/PersonalProjects/node-serialport",
+    "tar-pack": "~2.0.0",
+    "node-pre-gyp": "0.5.x",
+    "form-data": "~0.1.0"
   }
 }

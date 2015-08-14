@@ -27,7 +27,13 @@ var paths = {
         './node_modules/**',
         './bower_components/**',
         './vendor/**',
-        './**/*.html'
+        './**/*.html',
+        './fonts/**',
+        './javascripts/**',
+        './stylesheets/**'
+    ],
+    copyFromOsDir: [
+        './bin/**',
     ],
 }
 
@@ -44,7 +50,10 @@ var copyTask = function () {
     return projectDir.copyAsync('app', destDir.path(), {
         overwrite: true,
         matching: paths.copyFromAppDir
-    });
+    }).then(function(){projectDir.copyAsync('resources/'+utils.os(), destDir.path(), {
+        overwrite: true,
+        matching: paths.copyFromOsDir
+    })});
 };
 gulp.task('copy', ['clean'], copyTask);
 gulp.task('copy-watch', copyTask);
