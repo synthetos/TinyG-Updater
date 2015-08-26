@@ -15,30 +15,31 @@ require('crash-reporter').start();
 // be closed automatically when the javascript object is GCed.
 var mainWindow = null;
 
-// console.log("Path: " + process.execPath);
-// console.log("CWD: " + process.cwd());
+console.log("Path: " + process.execPath);
+console.log("CWD: " + process.cwd());
+console.log("ARGV: " + process.argv.join(" "));
 console.log("Node version: " + process.version);
 
 if (process.platform == 'darwin') {
-  if (process.argv.length == 1) {
-    // Running as an app
-    avrdude_path = path.resolve(path.dirname(process.execPath), "../Resources/app/bin/avrdude");
+  if (process.argv.length > 1) {
+    // Running from the command line
+    avrdude_path = path.resolve(process.cwd(), process.argv[1], "./bin/avrdude");
   }
   else {
-    // Running from the command line
-    avrdude_path = path.resolve(process.cwd(), "./darwin-bin/avrdude");
+    // Running as an app
+    avrdude_path = path.resolve(path.dirname(process.execPath), "../Resources/app.asar/bin/avrdude");
   }
   console.log("avrdude_path:" +avrdude_path)
 } else if (process.platform == 'win32') {
-  // On windows, we see if we were passed an app name
-  if (process.argv.length == 1) {
-    // Running as an app
-    avrdude_path = path.resolve(path.dirname(process.execPath), "./resources/app/bin/avrdude.exe");
-  }
-  else {
+  // // On windows, we see if we were passed an app name
+  // if (process.argv.length == 1) {
+  //   // Running as an app
+    // avrdude_path = "./bin/avrdude.exe";
+  // }
+  // else {
     // Running from the command line
-    avrdude_path = path.resolve(process.cwd(), process.argv[1], "../win-bin/avrdude.exe");
-  }
+    avrdude_path = path.resolve(process.cwd(), process.argv[1], "./bin/avrdude.exe");
+  // }
 }
 
 
@@ -173,7 +174,7 @@ function runAvrdude(portPath, hexName) {
   else
     avrdudeconf_path = avrdude_path+'.conf'
 
-  avrdude = spawn(avrdude_path, ['-C', avrdudeconf_path, '-p', 'x192a3', '-c', 'avr109', '-b', '115200', '-P', portPath, '-U', 'flash:w:'+full_hex_path]);
+  avrdude = spawn(avrdude_path, ['-C', avrdudeconf_path, '-p', 'x192a3', '-c', 'avr109', '-b', '115200', '-P', portPath, '-e', '-U', 'flash:w:'+full_hex_path]);
 
   avrdude.stdout.on('data', function (data) {
     mainWindow.webContents.send('status', {"log": data.toString()});

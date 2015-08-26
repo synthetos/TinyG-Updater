@@ -75,6 +75,7 @@ var renameApp = function() {
         finalAppDir.rename('Contents/Frameworks/Electron' + helper_suffix + '.app', manifest.productName + helper_suffix + '.app');
     });
     // Rename application
+    console.log('Contents/MacOS/Electron', manifest.productName);
     finalAppDir.rename('Contents/MacOS/Electron', manifest.productName);
     return Q();
 }
