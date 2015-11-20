@@ -1,3 +1,7 @@
+// This is main process of Electron, started as first thing when your
+// app starts. This script is running through entire life of your application.
+// It doesn't have any windows which you can see on screen, but we can open
+// window from here.
 var app = require('app');  // Module to control application life.
 var BrowserWindow = require('browser-window');  // Module to create native browser window.
 var spawn = require('child_process').spawn;
@@ -51,7 +55,7 @@ app.on('window-all-closed', function() {
 
 // This method will be called when atom-shell has done everything
 // initialization and ready for creating browser windows.
-app.on('ready', function() {
+app.on('ready', function () {
   // Create the browser window.
   mainWindow = new BrowserWindow({width: 600, height: 700});
 
@@ -61,7 +65,7 @@ app.on('ready', function() {
   mainWindow.webContents.on('did-finish-load', function() {
     listSerialPorts();
     mainWindow.webContents.send('process', avrdude_path);
-  });
+    });
 
   // Emitted when the window is closed.
   mainWindow.on('closed', function() {
@@ -98,7 +102,7 @@ ipc.on('load-hex', function(event, data) {
           downloadHex(hexName, full_hex_path, checkSum);
         } else {
           mainWindow.webContents.send('hexDownloaded', {name: hexName, downloaded:false, checksumError:true});
-        }
+    }
       } else {
         mainWindow.webContents.send('hexDownloaded', {name: hexName, downloaded:true, checksumError:false});
       }
@@ -131,7 +135,7 @@ function getChecksum(full_path, callback) {
     callback(new_hash);
   });
   file.pipe(shasum);
-}
+    }
 
 function downloadHex(hexName, full_hex_path, checkSum) {
   var file = fs.createWriteStream(full_hex_path);
@@ -151,8 +155,8 @@ function downloadHex(hexName, full_hex_path, checkSum) {
         } else {
           mainWindow.webContents.send('hexDownloaded', {name: hexName, downloaded:true, checksumError:false});
         }
-      });
     });
+});
   });
 }
 
@@ -179,7 +183,7 @@ function runAvrdude(portPath, hexName) {
   avrdude.stdout.on('data', function (data) {
     mainWindow.webContents.send('status', {"log": data.toString()});
     console.log('stdout: ' + data);
-  });
+});
 
   avrdude.stderr.on('data', function (data) {
     console.log('stderr: ' + data);

@@ -1,31 +1,22 @@
 'use strict';
 
+var pathUtil = require('path');
+var Q = require('q');
 var gulp = require('gulp');
+var rollup = require('rollup');
 var less = require('gulp-less');
-var esperanto = require('esperanto');
-var map = require('vinyl-map');
 var jetpack = require('fs-jetpack');
 
 var utils = require('./utils');
+var generateSpecsImportFile = require('./generate_specs_import');
 
 var projectDir = jetpack;
 var srcDir = projectDir.cwd('./app');
 var destDir = projectDir.cwd('./build');
 
 var paths = {
-    jsCodeToTranspile: [
-        'app/**/*.js',
-        '!app/main.js',
-        '!app/spec.js',
-        '!app/node_modules/**',
-        '!app/bower_components/**',
-        '!app/vendor/**'
-    ],
     copyFromAppDir: [
-        './main.js',
-        './spec.js',
         './node_modules/**',
-        './bower_components/**',
         './vendor/**',
         './**/*.html',
         './fonts/**',
@@ -58,20 +49,55 @@ gulp.task('copy', ['clean'], copyTask);
 gulp.task('copy-watch', copyTask);
 
 
-var transpileTask = function () {
-    return gulp.src(paths.jsCodeToTranspile)
-    .pipe(map(function(code, filename) {
-        try {
-            var transpiled = esperanto.toAmd(code.toString(), { strict: true });
-        } catch (err) {
-            throw new Error(err.message + ' ' + filename);
-        }
-        return transpiled.code;
-    }))
-    .pipe(gulp.dest(destDir.path()));
+var bundle = function (src, dest) {
+    var deferred = Q.defer();
+
+    rollup.rollup({
+        entry: src
+    }).then(function (bundle) {
+        var jsFile = pathUtil.basename(dest);
+        var result = bundle.generate({
+            format: 'iife',
+            sourceMap: true,
+            sourceMapFile: jsFile,
+        });
+        return Q.all([
+            destDir.writeAsync(dest, result.code + '\n//# sourceMappingURL=' + jsFile + '.map'),
+            destDir.writeAsync(dest + '.map', result.map.toString()),
+        ]);
+    }).then(function () {
+        deferred.resolve();
+    }).catch(function (err) {
+        console.error(err);
+    });
+
+    return deferred.promise;
 };
-gulp.task('transpile', ['clean'], transpileTask);
-gulp.task('transpile-watch', transpileTask);
+
+var bundleApplication = function () {
+    return Q.all([
+        bundle(srcDir.path('background.js'), destDir.path('background.js')),
+        bundle(srcDir.path('app.js'), destDir.path('app.js')),
+    ]);
+};
+
+var bundleSpecs = function () {
+    generateSpecsImportFile().then(function (specEntryPointPath) {
+        return Q.all([
+            bundle(srcDir.path('background.js'), destDir.path('background.js')),
+            bundle(specEntryPointPath, destDir.path('spec.js')),
+        ]);
+    });
+};
+
+var bundleTask = function () {
+    if (utils.getEnvName() === 'test') {
+        return bundleSpecs();
+    }
+    return bundleApplication();
+};
+gulp.task('bundle', ['clean'], bundleTask);
+gulp.task('bundle-watch', bundleTask);
 
 
 var lessTask = function () {
@@ -85,20 +111,16 @@ gulp.task('less-watch', lessTask);
 
 gulp.task('finalize', ['clean'], function () {
     var manifest = srcDir.read('package.json', 'json');
+    // Add "dev" or "test" suffix to name, so Electron will write all data
+    // like cookies and localStorage in separate places for each environment.
     switch (utils.getEnvName()) {
         case 'development':
-            // Add "dev" suffix to name, so Electron will write all
-            // data like cookies and localStorage into separate place.
             manifest.name += '-dev';
             manifest.productName += ' Dev';
             break;
         case 'test':
-            // Add "test" suffix to name, so Electron will write all
-            // data like cookies and localStorage into separate place.
             manifest.name += '-test';
             manifest.productName += ' Test';
-            // Change the main entry to spec runner.
-            manifest.main = 'spec.js';
             break;
     }
     destDir.write('package.json', manifest);
@@ -109,10 +131,10 @@ gulp.task('finalize', ['clean'], function () {
 
 
 gulp.task('watch', function () {
-    gulp.watch(paths.jsCodeToTranspile, ['transpile-watch']);
+    gulp.watch('app/**/*.js', ['bundle-watch']);
     gulp.watch(paths.copyFromAppDir, { cwd: 'app' }, ['copy-watch']);
     gulp.watch('app/**/*.less', ['less-watch']);
 });
 
 
-gulp.task('build', ['transpile', 'less', 'copy', 'finalize']);
+gulp.task('build', ['bundle', 'less', 'copy', 'finalize']);

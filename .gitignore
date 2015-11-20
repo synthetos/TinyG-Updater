@@ -1,8 +1,9 @@
 node_modules
-bower_components
 *.log
 .DS_Store
 Thumbs.db
+
+/app/spec.js
 /build/
 /releases/
 /tmp/

@@ -1,12 +1,16 @@
 electron-boilerplate
 ==============
-Comprehensive boilerplate application for [Electron](http://electron.atom.io).  
+Comprehensive boilerplate application for [Electron runtime](http://electron.atom.io).  
 
-This project gives you mainly three things:
+Scope of this project:
 
-1. Cross-platform development environment (works the same way on OSX, Windows and Linux).
-2. Basic structure for Electron app.
-3. Scripts to generate installers of your app for all three operating systems.
+- Provide basic structure of the application so you can much easier grasp what should go where.
+- Give you cross-platform development environment, which works the same way on OSX, Windows and Linux.
+- Generate ready for distribution installers of your app for all supported operating systems.
+
+NOT in the scope:
+
+- Imposing on you any framework (e.g. Angular, React). You can integrate the one which makes most sense for you.
 
 By the way, there is a twin project to this one: [nw-boilerplate](https://github.com/szwacz/nw-boilerplate), which is the same thing but for NW.js.
 
@@ -37,6 +41,10 @@ Also here you declare the version of Electron runtime you want to use:
 
 #### 2. For your application
 Sits on path: `electron-boilerplate/app/package.json`. This is **real** manifest of your application. Declare your app dependencies here.
+
+#### OMG, but seriously why there are two `package.json`?
+1. Native npm modules (those written in C, not JavaScript) need to be compiled, and here we have two different compilation targets for them. Those used in application need to be compiled against electron runtime, and all `devDependencies` need to be compiled against your locally installed node.js. Thanks to having two files this is trivial.
+2. When you package the app for distribution there is no need to add up to size of the app with your `devDependencies`. Here those are always not included (because reside outside the `app` directory).
 
 ### Project's folders
 
@@ -79,15 +87,19 @@ npm run app-install -- name_of_npm_module
 ```
 Of course this method works also for pure-js modules, so you can use it all the time if you're able to remember such an ugly command.
 
-#### Module loader
+#### Working with modules
 
-How about splitting your JavaScript code into modules? This project supports it by new ES6 syntax (thanks to [esperanto](https://github.com/esperantojs/esperanto)). ES6 modules are translated into AMD (RequireJS) modules. The main advantage of this setup is that you can use ES6/RequireJS for your own modules, and at the same time have normal access to node's `require()` to obtain stuff from npm.
-```javascript
-// Modules you write are required through new ES6 syntax
-// (It will be translated into AMD definition).
-import myOwnModule from './my_own_module';
-// Node.js (npm) modules are required the same way as always
-// (so you can still access all the goodness in npm).
+Electron ecosystem (because it's a merge of node.js and browser) gives you a little trouble while working with modules. ES6 modules have nice syntax and are the future, so they're utilized in this project (thanks to [rollup](https://github.com/rollup/rollup)). But at the same time node.js and npm still rely on the CommonJS syntax. So in this project you need to use both:
+```js
+// Modules which you authored in this project are intended to be
+// imported through new ES6 syntax.
+import { myStuff } from './my_lib/my_stuff';
+
+// Node.js modules are loaded the old way with require().
+var fs = require('fs');
+
+// And all modules which you installed from npm
+// also need to be required.
 var moment = require('moment');
 ```
 
@@ -112,10 +124,30 @@ It will start the packaging process for operating system you are running this co
 
 You can create Windows installer only when running on Windows, the same is true for Linux and OSX. So to generate all three installers you need all three operating systems.
 
+## Mac only
 
-## Special precautions for Windows
-As installer [NSIS](http://nsis.sourceforge.net/Main_Page) is used. You have to install it (version 3.0), and add NSIS folder to PATH in Environment Variables, so it is reachable to scripts in this project (path should look something like `C:/Program Files (x86)/NSIS`).
+#### App signing
 
+The Mac release supports [code signing](https://developer.apple.com/library/mac/documentation/Security/Conceptual/CodeSigningGuide/Procedures/Procedures.html). To sign the `.app` in the release image, include the certificate ID in the command as so,
+```
+npm run release -- --sign A123456789
+```
+
+## Windows only
+
+#### Installer
+
+The installer is built using [NSIS](http://nsis.sourceforge.net). You have to install NSIS version 3.0, and add its folder to PATH in Environment Variables, so it is reachable to scripts in this project. For example, `C:\Program Files (x86)\NSIS`.
+
+#### 32-bit build on 64-bit Windows
+
+There are still a lot of 32-bit Windows installations in use. If you want to support those systems and have 64-bit OS on your machine you need to manually force npm to install all packages for 32-bit. Npm allowes to do that via environment variable:
+```
+SET npm_config_arch=ia32
+rmdir /S node_modules
+npm install
+```
+Note: This snippet deletes whole `node_modules` folder assuming you already had run `npm install` in the past (then fresh install is required for the trick to work).
 
 # License
 

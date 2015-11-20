@@ -27,9 +27,9 @@ var copyRuntime = function () {
     return projectDir.copyAsync('node_modules/electron-prebuilt/dist', readyAppDir.path(), { overwrite: true });
 };
 
-var cleanupRuntime = function() {
+var cleanupRuntime = function () {
     return readyAppDir.removeAsync('resources/default_app');
-}
+};
 
 var packageBuiltApp = function () {
     var deferred = Q.defer();
@@ -64,9 +64,9 @@ var finalize = function () {
     return deferred.promise;
 };
 
-var renameApp = function() {
+var renameApp = function () {
     return readyAppDir.renameAsync('electron.exe', manifest.productName + '.exe');
-}
+};
 
 var createInstaller = function () {
     var deferred = Q.defer();
@@ -124,5 +124,6 @@ module.exports = function () {
     .then(finalize)
     .then(renameApp)
     .then(createInstaller)
-    .then(cleanClutter);
+    .then(cleanClutter)
+    .catch(console.error);
 };
