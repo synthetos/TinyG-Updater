@@ -65,6 +65,9 @@ var finalize = function () {
     // Copy icon
     projectDir.copy('resources/osx/icon.icns', finalAppDir.path('Contents/Resources/icon.icns'));
 
+    // Copy bin directory
+    projectDir.copy('resources/osx/bin', finalAppDir.path('Contents/Resources/bin'));
+
     return Q();
 };
 

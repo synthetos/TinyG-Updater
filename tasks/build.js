@@ -33,7 +33,6 @@ var paths = {
         './stylesheets/**'
     ],
     copyFromOsDir: [
-        './bin/**',
     ],
 }
 

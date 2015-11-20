@@ -23,23 +23,23 @@ console.log("Node version: " + process.version);
 if (process.platform == 'darwin') {
   if (process.argv.length > 1) {
     // Running from the command line
-    avrdude_path = path.resolve(process.cwd(), process.argv[1], "./bin/avrdude");
+    avrdude_path = path.resolve(process.cwd(), process.argv[1], "../resources/osx/bin/avrdude");
   }
   else {
     // Running as an app
-    avrdude_path = path.resolve(path.dirname(process.execPath), "../Resources/app.asar/bin/avrdude");
+    avrdude_path = path.resolve(path.dirname(process.execPath), "../Resources/bin/avrdude");
   }
   console.log("avrdude_path:" +avrdude_path)
 } else if (process.platform == 'win32') {
-  // // On windows, we see if we were passed an app name
-  // if (process.argv.length == 1) {
-  //   // Running as an app
-    // avrdude_path = "./bin/avrdude.exe";
-  // }
-  // else {
+  // On windows, we see if we were passed an app name
+  if (process.argv.length > 1) {
     // Running from the command line
-    avrdude_path = path.resolve(process.cwd(), process.argv[1], "./bin/avrdude.exe");
-  // }
+    avrdude_path = path.resolve(process.cwd(), process.argv[1], "../resources/windows/bin/avrdude");
+  }
+  else {
+    // Running as an app
+    avrdude_path = path.resolve(path.dirname(process.execPath), "./bin/avrdude.exe");
+  }
 }
 
 
