@@ -1,11 +1,6 @@
 {
-  "config": {
-    "target": "development"
-  },
   "productName": "TinyG-Updater",
   "name": "tinyg-updater",
-  "description": "Starter for your Electron application. Out of the box ready for serious stuff.",
-  "identifier": "com.synthetos.tinyg-updater",
   "version": "0.0.1",
   "main": "main.js",
   "dependencies": {
