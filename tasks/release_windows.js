@@ -45,7 +45,7 @@ var finalize = function () {
     var deferred = Q.defer();
 
     projectDir.copy('resources/windows/icon.ico', readyAppDir.path('icon.ico'));
-    projectDir.copy('resources/windows/bin', readyAppDir.path('bin'));
+    projectDir.copy('resources/arduino-flash-tools/tools_windows', readyAppDir.path('tools_windows'));
 
     // Replace Electron icon for your own.
     var rcedit = require('rcedit');

@@ -67,7 +67,7 @@ var finalize = function () {
     projectDir.copy('resources/osx/icon.icns', finalAppDir.path('Contents/Resources/icon.icns'));
 
     // Copy bin directory
-    projectDir.copy('resources/osx/bin', finalAppDir.path('Contents/Resources/bin'));
+    projectDir.copy('resources/arduino-flash-tools/tools_darwin', finalAppDir.path('Contents/Resources/tools_darwin'));
 
     return Q();
 };

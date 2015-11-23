@@ -1,4 +1,8 @@
+"use strict";
+
 var app = require('app');  // Module to control application life.
+var Menu = require('menu');
+
 var BrowserWindow = require('browser-window');  // Module to create native browser window.
 var spawn = require('child_process').spawn;
 var serialport = require('serialport');
@@ -21,26 +25,43 @@ console.log("ARGV: " + process.argv.join(" "));
 console.log("Node version: " + process.version);
 
 var avrdude_path = "not_set";
+var avrdudeconf_path = "";
+var full_xboot_path = "";
+
+if (process.platform == 'win32') {
+  // cut off the ".exe"
+}
+else {
+  avrdudeconf_path = avrdude_path+'.conf'
+}
 
 if (process.platform == 'darwin') {
   if (process.argv.length > 1) {
     // Running from the command line
-    avrdude_path = path.resolve(process.cwd(), process.argv[1], "../resources/osx/bin/avrdude");
+    avrdude_path = path.resolve(process.cwd(), process.argv[1], "./tools_darwin/avrdude/bin/avrdude");
+    avrdudeconf_path = path.resolve(process.cwd(), process.argv[1], "./tools_darwin/avrdude/etc/avrdude.conf");
+    full_xboot_path = path.resolve(process.cwd(), process.argv[1], "./xboot.hex");
   }
   else {
     // Running as an app
-    avrdude_path = path.resolve(path.dirname(process.execPath), "../Resources/bin/avrdude");
+    avrdude_path = path.resolve(path.dirname(process.execPath), "../Resources/tools_darwin/avrdude/bin/avrdude");
+    avrdudeconf_path = path.resolve(path.dirname(process.execPath), "../Resources/tools_darwin/avrdude/etc/avrdude.conf");
+    full_xboot_path = path.resolve(path.dirname(process.execPath), "../Resources/xboot.hex");
   }
   console.log("avrdude_path:" +avrdude_path)
 } else if (process.platform == 'win32') {
   // On windows, we see if we were passed an app name
   if (process.argv.length > 1) {
     // Running from the command line
-    avrdude_path = path.resolve(process.cwd(), process.argv[1], "../resources/windows/bin/avrdude");
+    avrdude_path = path.resolve(process.cwd(), process.argv[1], "./tools_windows/avrdude/bin/avrdude.exe");
+    avrdudeconf_path = path.resolve(process.cwd(), process.argv[1], "./tools_windows/avrdude/etc/avrdude.conf");
+    full_xboot_path = path.resolve(process.cwd(), process.argv[1], "./xboot.hex");
   }
   else {
     // Running as an app
-    avrdude_path = path.resolve(path.dirname(process.execPath), "./bin/avrdude.exe");
+    avrdude_path = path.resolve(path.dirname(process.execPath), "./tools_windows/avrdude/bin/avrdude.exe");
+    avrdudeconf_path = path.resolve(path.dirname(process.execPath), "./tools_windows/avrdude/etc/avrdude.conf");
+    full_xboot_path = path.resolve(path.dirname(process.execPath), "./xboot.hex");
   }
 }
 
@@ -64,6 +85,99 @@ app.on('ready', function() {
     listSerialPorts();
     mainWindow.webContents.send('process', avrdude_path);
   });
+
+
+  var application_menu = [
+    {
+      label: 'Advanced',
+      submenu: [
+        {
+          label: 'Flash Bootloader and Fuses',
+          type: 'checkbox',
+          checked: false,
+          click: function(menuItem) {
+            mainWindow.webContents.send('useICE', menuItem.checked);
+          }
+        },
+
+        {
+          label: '--',
+          type: 'separator',
+        },
+
+        {
+          label: 'Open DevTools',
+          // accelerator: 'CmdOrCtrl+A',
+          click: function() {
+            mainWindow.openDevTools();
+          }
+        },
+        {
+          label: 'Close DevTools',
+          click: function() {
+            mainWindow.closeDevTools();
+          }
+        }
+      ]
+    }
+  ];
+
+  // {
+  //   label: 'Open',
+  //   accelerator: 'CmdOrCtrl+O',
+  //   click: function() {
+  //     require('electron').dialog.showOpenDialog({ properties: [ 'openFile' ]});
+  //   }
+  // },
+
+  if (process.platform == 'darwin') {
+    var name = require('electron').app.getName();
+    application_menu.unshift({
+      label: name,
+      submenu: [
+        {
+          label: 'About ' + name,
+          role: 'about'
+        },
+        {
+          type: 'separator'
+        },
+        {
+          label: 'Services',
+          role: 'services',
+          submenu: []
+        },
+        {
+          type: 'separator'
+        },
+        {
+          label: 'Hide ' + name,
+          accelerator: 'Command+H',
+          role: 'hide'
+        },
+        {
+          label: 'Hide Others',
+          accelerator: 'Command+Shift+H',
+          role: 'hideothers'
+        },
+        {
+          label: 'Show All',
+          role: 'unhide'
+        },
+        {
+          type: 'separator'
+        },
+        {
+          label: 'Quit',
+          accelerator: 'Command+Q',
+          click: function() { app.quit(); }
+        },
+      ]
+    });
+  }
+
+  var menu = Menu.buildFromTemplate(application_menu);
+  Menu.setApplicationMenu(menu);
 
   // Emitted when the window is closed.
   mainWindow.on('closed', function() {
@@ -115,10 +229,10 @@ ipc.on('load-hex', function(event, data) {
 });
 
 ipc.on('program-hex', function(event, data) {
-  if (data.reset) {
+  if (data.reset && !data.useICE) {
     resetTinyG(data.port, data.name);
   } else {
-    runAvrdude(data.port, data.name);
+    runAvrdude(data.port, data.name, data.useICE, data.fuses);
   }
 });
 
@@ -158,7 +272,7 @@ function downloadHex(hexName, full_hex_path, checkSum) {
   });
 }
 
-function runAvrdude(portPath, hexName) {
+function runAvrdude(portPath, hexName, useICE, fuses) {
   var status = "connecting";
   var hashCount = 0;
 
@@ -170,13 +284,30 @@ function runAvrdude(portPath, hexName) {
 
   var data_cache = "";
 
-  if (process.platform == 'win32')
-    // cut off the ".exe"
-    avrdudeconf_path = avrdude_path.slice(0, -4)+'.conf'
-  else
-    avrdudeconf_path = avrdude_path+'.conf'
+  var avrdude_opts;
+  var avrdude_default_opts = ['-C', avrdudeconf_path, '-p', 'x192a3', '-c', 'avr109', '-b', '115200', '-P', portPath, '-e', '-U', 'flash:w:'+full_hex_path];
+  var avrdude_ice_opts = ['-C', avrdudeconf_path, '-p', 'x192a3', '-c', portPath, '-P', 'usb',
+    '-U', 'flash:w:xboot.hex',
+    '-U', 'flash:w:'+full_hex_path,
+  ];
 
-  avrdude = spawn(avrdude_path, ['-C', avrdudeconf_path, '-p', 'x192a3', '-c', 'avr109', '-b', '115200', '-P', portPath, '-e', '-U', 'flash:w:'+full_hex_path]);
+  if (useICE) {
+    avrdude_opts = avrdude_ice_opts;
+    for (var i =0; i < fuses.length; i++) {
+      if (fuses[i] != null) {
+        avrdude_opts.push('-U');
+        avrdude_opts.push('fuse'+i+':w:'+fuses[i]+':m');
+      }
+    }
+  } else {
+    avrdude_opts = avrdude_default_opts;
+  }
+
+  //avrdude -q -c avrisp2 -p atxmega192a3 -P usb -u -U flash:w:${TINYG} -U boot:w:${XBOOT} -U fuse0:w:0xFF:m -U fuse1:w:0x00:m -U fuse2:w:0xBE:m -U fuse4:w:0xFE:m -U fuse5:w:0xEB:m
+  mainWindow.webContents.send('status', {"log": "Spawning `" + avrdude_path + " " + avrdude_opts.join(" ") + "`\n"});
+
+
+  var avrdude = spawn(avrdude_path, avrdude_opts);
 
   avrdude.stdout.on('data', function (data) {
     mainWindow.webContents.send('status', {"log": data.toString()});
@@ -192,11 +323,13 @@ function runAvrdude(portPath, hexName) {
   });
 
   function parse_data_cache() {
-    pre_data_cache = "";
+    var pre_data_cache = "";
 
     while (data_cache != pre_data_cache) {
       pre_data_cache = data_cache;
       console.log("dc>> " + data_cache);
+
+      var r; // responses
 
       if (r = /AVR device initialized and ready to accept instructions([^•]*)/.exec(data_cache)) {
         status="connected";
@@ -283,6 +416,7 @@ function readVersion(portPath) {
       console.log("tg> " + data);
       var err = false;
       try{
+        var r;
         if (r = /({.+})$/m.exec(data)) {
           var resp = JSON.parse(r[1]);
           if (resp.r.fb) {

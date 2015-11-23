@@ -14,6 +14,11 @@ var projectDir = jetpack;
 var srcDir = projectDir.cwd('./app');
 var destDir = projectDir.cwd('./build');
 
+var os_to_tools_dirname_lookup = {
+  'osx': 'tools_darwin/**',
+  'windows': 'tools_windows/**'
+};
+
 var paths = {
     copyFromAppDir: [
         './node_modules/**',
@@ -23,7 +28,14 @@ var paths = {
         './javascripts/**',
         './stylesheets/**'
     ],
+    copyFromResourcesDir: [
+        '*.hex'
+    ],
     copyFromOsDir: [
+        '*'
+    ],
+    copyFromToolsDir: [
+        os_to_tools_dirname_lookup[utils.os()]
     ],
 }
 
@@ -40,11 +52,30 @@ var copyTask = function () {
     return projectDir.copyAsync('app', destDir.path(), {
         overwrite: true,
         matching: paths.copyFromAppDir
-    }).then(function(){projectDir.copyAsync('resources/'+utils.os(), destDir.path(), {
-        overwrite: true,
-        matching: paths.copyFromOsDir
-    })});
-};
+    }).then(
+      function(){
+        projectDir.copyAsync('resources/', destDir.path(), {
+          overwrite: true,
+          matching: paths.copyFromResourcesDir
+        })
+      }
+    ).then(
+      function(){
+        projectDir.copyAsync('resources/'+utils.os(), destDir.path(), {
+          overwrite: true,
+          matching: paths.copyFromOsDir
+        })
+      }
+    ).then(
+      function(){
+        projectDir.copyAsync('resources/arduino-flash-tools/', destDir.path(), {
+          overwrite: true,
+          matching: paths.copyFromToolsDir
+        })
+      }
+    );
+}
+
 gulp.task('copy', ['clean'], copyTask);
 gulp.task('copy-watch', copyTask);
 

@@ -5,6 +5,7 @@ var binaryApp = angular.module('binaryApp', ['ui.bootstrap']);
 var ipc = require('ipc');
 
 binaryApp.controller('BinaryCtrl', function ($scope, $http, $modal) {
+  $scope.json_data = {};
   $scope.binaries = [];
   $scope.ports = [];
   $scope.portVersions = {};
@@ -19,6 +20,8 @@ binaryApp.controller('BinaryCtrl', function ($scope, $http, $modal) {
   // Update the list of online binaries
   $scope.updateList = function() {
     $http.get('http://synthetos.github.io/tinyg-binaries.json').success(function(data) {
+      $scope.json_data = data;
+
       $scope.binaries = data.binaries;
       $scope.binaryClicked($scope.binaries[0]);
       for (var i = 1; i < $scope.binaries.length; i++) {
@@ -28,6 +31,8 @@ binaryApp.controller('BinaryCtrl', function ($scope, $http, $modal) {
           ipc.send('load-hex', {name:binary.name+".hex", sum:binary.sum, checkOnly:true});
         }
       };
+
+      $scope.bootloader = data.bootloader;
     });
   }
 
@@ -48,6 +53,20 @@ binaryApp.controller('BinaryCtrl', function ($scope, $http, $modal) {
         port.failedCheck = cached.failed;
         port.version = cached.version;
       }
+    }
+
+    $scope.$apply();
+  });
+
+  ipc.on('useICE', function(useICE) {
+    $scope.useICE = useICE;
+
+    if (useICE) {
+      var bootloader = $scope.json_data.bootloader;
+      ipc.send('load-hex', {name:bootloader.name+".hex", sum:bootloader.sum, checkOnly:false});
+      $scope.$parent.selectedPort = $scope.json_data.programmers[0].avrdude_name;
+    } else {
+      $scope.$parent.selectedPort = $scope.ports[0].comName;
     }
 
     $scope.$apply();
@@ -98,7 +117,7 @@ binaryApp.controller('BinaryCtrl', function ($scope, $http, $modal) {
     $scope.programming = true;
     $scope.progress = {text:"Starting...", percent:0, error:false};
     delete $scope.portVersions[$scope.selectedPort];
-    ipc.send('program-hex', {name:$scope.selectedHex.name+".hex", port:$scope.selectedPort, reset:$scope.autoReset});
+    ipc.send('program-hex', {name:$scope.selectedHex.name+".hex", port:$scope.selectedPort, reset:$scope.autoReset, useICE:$scope.useICE, fuses:$scope.json_data.fuses});
 
     var modalInstance = $modal.open({
       templateUrl: 'programming.html',

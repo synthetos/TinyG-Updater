@@ -42,25 +42,37 @@
       </tr>
     </table>
 
-    <h2>2) Choose a TinyG</h2>
+    <span ng-if="!useICE">
+      <h2>2) Choose a TinyG</h2>
 
-    <p class="alert alert-warning" role="alert" ng-if="ports.length==0">
-      <td colspan="2">Waiting for a TinyG to be connected...</td>
-    </p>
+      <p class="alert alert-warning" role="alert" ng-if="ports.length==0">
+        <td colspan="2">Waiting for a TinyG to be connected...</td>
+      </p>
 
-    <table class="table table-striped" ng-if="ports.length>0">
-      <tr ng-repeat="port in ports" ng-click="$parent.selectedPort = port.comName">
-        <td class="text-left"><input type="radio" ng-model="$parent.selectedPort" ng-value="port.comName"> <code>{{port.comName}}</code></td>
-        <td>
-          <button class="fa fa-search" ng-show="!port.version &amp;&amp; !port.checking" ng-click="checkVersion(port)"> Lookup...</button>
-          <div ng-show="port.version != null">{{port.version}} <button class="fa fa-refresh" ng-show="port.version &amp;&amp; !port.checking" ng-click="checkVersion(port)"></button><i class="fa fa-refresh fa-spin" ng-show="port.checking"></i><i class="fa fa-frown-o" ng-show="port.failedCheck"></i></div>
-        </td>
-      </tr>
-    </table>
+      <table class="table table-striped" ng-if="ports.length>0">
+        <tr ng-repeat="port in ports" ng-click="$parent.selectedPort = port.comName">
+          <td class="text-left"><input type="radio" ng-model="$parent.selectedPort" ng-value="port.comName"> <code>{{port.comName}}</code></td>
+          <td>
+            <button class="fa fa-search" ng-show="!port.version &amp;&amp; !port.checking" ng-click="checkVersion(port)"> Lookup...</button>
+            <div ng-show="port.version != null">{{port.version}} <button class="fa fa-refresh" ng-show="port.version &amp;&amp; !port.checking" ng-click="checkVersion(port)"></button><i class="fa fa-refresh fa-spin" ng-show="port.checking"></i><i class="fa fa-frown-o" ng-show="port.failedCheck"></i></div>
+          </td>
+        </tr>
+      </table>
+    </span>
+    <span ng-if="useICE">
+      <h2>2) Choose a Programmer</h2>
+
+      <table class="table table-striped" ng-if="json_data.programmers.length>0">
+        <tr ng-repeat="port in json_data.programmers" ng-click="$parent.selectedPort = port.avrdude_name">
+          <td class="text-left"><input type="radio" ng-model="$parent.selectedPort" ng-value="port.avrdude_name"> {{port.name}}</td>
+        </tr>
+      </table>
+
+    </span>
 
     <h2>3) Program it!</h2>
     <p ng-if="selectedHex &amp;&amp; selectedPort &amp;&amp; ports.length&gt;0">
-      Program <code>{{selectedHex.name+'.hex'}}</code> to <code>{{selectedPort}}</code>
+      Program <code>{{selectedHex.name+'.hex'}}</code> <span ng-if="useICE"><i>and the bootloader</i></span> to <code>{{selectedPort}}</code>
     </p>
     <p class="alert alert-warning" role="alert" ng-if="!selectedHex">
       Please select a binary. <i class="fa fa-spinner fa-spin"></i>
@@ -73,7 +85,8 @@
     </p>
     <div class="clearfix">
       <p class="pull-right text-right">
-        <label class="checkbox"><input type="checkbox" ng-model="autoReset"> Attempt automatic reset</label>
+        <span ng-if="useICE"><label class="checkbox">Make sure the selected programmer is hooked up first!</label></span>
+        <span ng-if="!useICE"><label class="checkbox"><input type="checkbox" ng-model="autoReset" ng-disabled="useICE"> Attempt automatic reset</label></span>
         <button type="button" class="btn btn-primary" ng-model="programmable" ng-disabled="!selectedHex || !selectedHex.downloaded || !$parent.selectedPort || ports==null || ports.length==0" ng-click="go()">Go!</button>
       </p>
     </div>
@@ -81,7 +94,7 @@
     <p>Please visit the <a href="https://github.com/synthetos/tinyg/wiki">TinyG Wiki</a> for more complete info.</p>
     <p>Please visit the <a href="https://github.com/synthetos/tgfx/wiki">tgFX Wiki</a> for more complete info.</p>
     <p>Please visit the <a href="https://github.com/synthetos/G2/wiki">G2 Wiki</a> for more complete info.</p> -->
-    <p id="version">v0.5 {{process|json}}</p>
+    <p id="version">v0.6</p>
   </div>
 
   <script src="javascripts/angular.min.js"></script>
