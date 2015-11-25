@@ -36,7 +36,7 @@ else {
 }
 
 if (process.platform == 'darwin') {
-  if (process.argv.length > 1) {
+  if (process.argv.length > 1 && process.argv[1][0] == '-') {
     // Running from the command line
     avrdude_path = path.resolve(process.cwd(), process.argv[1], "./tools_darwin/avrdude/bin/avrdude");
     avrdudeconf_path = path.resolve(process.cwd(), process.argv[1], "./tools_darwin/avrdude/etc/avrdude.conf");
