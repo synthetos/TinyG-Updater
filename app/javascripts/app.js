@@ -64,9 +64,9 @@ binaryApp.controller('BinaryCtrl', function ($scope, $http, $modal) {
     if (useICE) {
       var bootloader = $scope.json_data.bootloader;
       ipc.send('load-hex', {name:bootloader.name+".hex", sum:bootloader.sum, checkOnly:false});
-      $scope.$parent.selectedPort = $scope.json_data.programmers[0].avrdude_name;
+      $scope.selectedPort = $scope.json_data.programmers[0].avrdude_name;
     } else {
-      $scope.$parent.selectedPort = $scope.ports[0].comName;
+      $scope.selectedPort = $scope.ports[0].comName;
     }
 
     $scope.$apply();

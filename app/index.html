@@ -59,6 +59,7 @@
         </tr>
       </table>
     </span>
+
     <span ng-if="useICE">
       <h2>2) Choose a Programmer</h2>
 
@@ -71,23 +72,26 @@
     </span>
 
     <h2>3) Program it!</h2>
-    <p ng-if="selectedHex &amp;&amp; selectedPort &amp;&amp; ports.length&gt;0">
+    <p ng-if="selectedHex &amp;&amp; selectedPort &amp;&amp; (useICE || ports.length&gt;0)">
       Program <code>{{selectedHex.name+'.hex'}}</code> <span ng-if="useICE"><i>and the bootloader</i></span> to <code>{{selectedPort}}</code>
     </p>
     <p class="alert alert-warning" role="alert" ng-if="!selectedHex">
       Please select a binary. <i class="fa fa-spinner fa-spin"></i>
     </p>
-    <p class="alert alert-warning" role="alert" ng-if="ports==null || ports.length==0">
+    <p class="alert alert-warning" role="alert" ng-if="!useICE &amp;&amp; (ports==null || ports.length==0)">
       Please connect a TinyG. <i class="fa fa-spinner fa-spin"></i>
     </p>
-    <p class="alert alert-warning" role="alert" ng-if="ports.length&gt;0 &amp;&amp; !$parent.selectedPort">
+    <p class="alert alert-warning" role="alert" ng-if="!useICE &amp;&amp; ports.length&gt;0 &amp;&amp; !selectedPort">
       Please choose a TinyG. <i class="fa fa-spinner fa-spin"></i>
+    </p>
+    <p class="alert alert-warning" role="alert" ng-if="useICE &amp;&amp; !selectedPort">
+      Please choose a Programmer. <i class="fa fa-spinner fa-spin"></i>
     </p>
     <div class="clearfix">
       <p class="pull-right text-right">
         <span ng-if="useICE"><label class="checkbox">Make sure the selected programmer is hooked up first!</label></span>
         <span ng-if="!useICE"><label class="checkbox"><input type="checkbox" ng-model="autoReset" ng-disabled="useICE"> Attempt automatic reset</label></span>
-        <button type="button" class="btn btn-primary" ng-model="programmable" ng-disabled="!selectedHex || !selectedHex.downloaded || !$parent.selectedPort || ports==null || ports.length==0" ng-click="go()">Go!</button>
+        <button type="button" class="btn btn-primary" ng-model="programmable" ng-disabled="!selectedHex || !selectedHex.downloaded || !selectedPort || (!useICE &amp;&amp; (ports==null || ports.length==0))" ng-click="go()">Go!</button>
       </p>
     </div>
     <!-- <h2>About</h2>
