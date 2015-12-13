@@ -22,13 +22,10 @@ test_script:
   # run tests
   #- npm test
 
-after_build:
-  7z a tmp.zip %APPVEYOR_BUILD_FOLDER%\tmp\
-
-
 artifacts:
   - path: tmp.zip
     name: Updater-Tmp
 
 # Don't actually build.
-build: off
+build:
+  - 7z a tmp.zip %APPVEYOR_BUILD_FOLDER%\tmp\
