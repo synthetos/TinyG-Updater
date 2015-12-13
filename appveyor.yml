@@ -27,5 +27,5 @@ artifacts:
     name: Updater-Tmp
 
 # Don't actually build.
-build:
+build_script:
   - 7z a tmp.zip %APPVEYOR_BUILD_FOLDER%\tmp\
