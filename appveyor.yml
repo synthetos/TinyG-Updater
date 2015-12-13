@@ -22,9 +22,12 @@ test_script:
   # run tests
   #- npm test
 
-artifacts:
-  - path: tmp/*
-    name: Updater-Tmp
+# artifacts:
+#   - path: tmp/*
+#     name: Updater-Tmp
+
+after_build:
+  ps: $root = Resolve-Path .\tmp; [IO.Directory]::GetFiles($root.Path, '*.*', 'AllDirectories') | % { Push-AppveyorArtifact $_ -FileName $_.Substring($root.Path.Length + 1) -DeploymentName to-publish }
 
 # Don't actually build.
 build: off
