@@ -20,7 +20,11 @@ test_script:
   - node --version
   - npm --version
   # run tests
-  - npm test
+  #- npm test
+
+artifacts:
+  - path: tmp/*
+    name: Updater-Tmp
 
 # Don't actually build.
 build: off
