@@ -72,44 +72,45 @@ var createInstaller = function () {
     var deferred = Q.defer();
 
     var finalPackageName = manifest.name + '_' + manifest.version + '.exe';
-    var installScript = projectDir.read('resources/windows/installer.nsi');
-    installScript = utils.replace(installScript, {
-        name: manifest.name,
-        productName: manifest.productName,
-        version: manifest.version,
-        src: readyAppDir.path(),
-        dest: releasesDir.path(finalPackageName),
-        icon: readyAppDir.path('icon.ico'),
-        setupIcon: projectDir.path('resources/windows/setup-icon.ico'),
-        banner: projectDir.path('resources/windows/setup-banner.bmp'),
-    });
-    tmpDir.write('installer.nsi', installScript);
 
-    gulpUtil.log('Building installer with NSIS...');
-
-    // Remove destination file if already exists.
-    releasesDir.remove(finalPackageName);
-
-    // Note: NSIS have to be added to PATH (environment variables).
-    var nsis = childProcess.spawn('makensis', [
-        tmpDir.path('installer.nsi')
-    ], {
-        stdio: 'inherit'
-    });
-    nsis.on('error', function (err) {
-        if (err.message === 'spawn makensis ENOENT') {
-            throw "Can't find NSIS. Are you sure you've installed it and"
-                + " added to PATH environment variable?";
-        } else {
-            throw err;
-        }
-    });
-    nsis.on('close', function () {
-        gulpUtil.log('Installer ready!', releasesDir.path(finalPackageName));
-        deferred.resolve();
-    });
-
-    return deferred.promise;
+    // var installScript = projectDir.read('resources/windows/installer.nsi');
+    // installScript = utils.replace(installScript, {
+    //     name: manifest.name,
+    //     productName: manifest.productName,
+    //     version: manifest.version,
+    //     src: readyAppDir.path(),
+    //     dest: releasesDir.path(finalPackageName),
+    //     icon: readyAppDir.path('icon.ico'),
+    //     setupIcon: projectDir.path('resources/windows/setup-icon.ico'),
+    //     banner: projectDir.path('resources/windows/setup-banner.bmp'),
+    // });
+    // tmpDir.write('installer.nsi', installScript);
+    //
+    // gulpUtil.log('Building installer with NSIS...');
+    //
+    // // Remove destination file if already exists.
+    // releasesDir.remove(finalPackageName);
+    //
+    // // Note: NSIS have to be added to PATH (environment variables).
+    // var nsis = childProcess.spawn('makensis', [
+    //     tmpDir.path('installer.nsi')
+    // ], {
+    //     stdio: 'inherit'
+    // });
+    // nsis.on('error', function (err) {
+    //     if (err.message === 'spawn makensis ENOENT') {
+    //         throw "Can't find NSIS. Are you sure you've installed it and"
+    //             + " added to PATH environment variable?";
+    //     } else {
+    //         throw err;
+    //     }
+    // });
+    // nsis.on('close', function () {
+    //     gulpUtil.log('Installer ready!', releasesDir.path(finalPackageName));
+    //     deferred.resolve();
+    // });
+    //
+    // return deferred.promise;
 };
 
 var cleanClutter = function () {
@@ -123,7 +124,7 @@ module.exports = function () {
     .then(packageBuiltApp)
     .then(finalize)
     .then(renameApp)
-    .then(createInstaller)
-    .then(cleanClutter)
+    // .then(createInstaller)
+    // .then(cleanClutter)
     .catch(console.error);
 };
